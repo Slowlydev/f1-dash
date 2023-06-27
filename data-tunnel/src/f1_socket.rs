@@ -1,16 +1,15 @@
 use reqwest::{
     header::{HeaderMap, HeaderValue},
-    Client, Response, Result as ReqwestResult,
+    Client as ReqwestClient, Response, Result as ReqwestResult,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-
-// use tokio::net::TcpStream;
-// use tokio_tungstenite::{
-//     connect_async,
-//     tungstenite::{client::IntoClientRequest, Error as TungsteniteError},
-//     MaybeTlsStream, WebSocketStream,
-// };
+use tokio::net::TcpStream;
+use tokio_tungstenite::{
+    connect_async,
+    tungstenite::{handshake::client::Request, Error as TungsteniteError},
+    MaybeTlsStream, WebSocketStream,
+};
 
 const F1_BASE_URL: &str = "livetiming.formula1.com/signalr";
 
@@ -57,22 +56,27 @@ impl F1Socket {
         Self::encode_uri_component(&json.to_string())
     }
 
-    fn create_url() -> String {
-        // TODO add dynamic stuff here
-        F1_BASE_URL.to_owned()
+    fn create_url(token: &str) -> String {
+        if let Some(env_url) = std::env::var_os("WS_URL") {
+            if let Ok(env_url) = env_url.into_string() {
+                return env_url;
+            };
+        };
+
+        let hub: String = Self::create_hub();
+        let encoded_token: String = Self::encode_uri_component(token);
+
+        format!("wss://{F1_BASE_URL}/connect?clientProtocol=1.5&transport=webSockets&connectionToken={encoded_token}&connectionData={hub}")
     }
 
     pub async fn negotiate() -> ReqwestResult<(HeaderValue, NegotiateResult)> {
         let hub: String = Self::create_hub();
-        let base_url: String = Self::create_url();
-
         let url: String =
-            format!("https://{base_url}/negotiate?connectionData={hub}&clientProtocol=1.5");
+            format!("https://{F1_BASE_URL}/negotiate?connectionData={hub}&clientProtocol=1.5");
 
-        let client: Client = Client::new();
+        let client: ReqwestClient = ReqwestClient::new();
         let res: Response = client.get(url).send().await?;
 
-        // TODO only use cookie header and leave the others alone
         // need to find out how to deal with return types
         // TODO look for better way than clone here, or is this the way?
         let header: &HeaderMap = res.headers();
@@ -86,10 +90,31 @@ impl F1Socket {
         Ok((cookie, json))
     }
 
-    // Result<WebSocketStream<MaybeTlsStream<TcpStream>>, TungsteniteError>
+    pub async fn start() -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, TungsteniteError> {
+        let (cookie, negotiate_result) = Self::negotiate().await.expect("Failed to negotiate");
 
-    // pub async fn stream() {
-    // let (negotiate_headers, negotiate_result) =
-    //     Self::negotiate().await.expect("Failed to negotiate");
-    // }
+        let url: String = Self::create_url(&negotiate_result.ConnectionToken);
+
+        let ws_request = Request::builder()
+            .uri(url)
+            .header("User-Agent", "BestHTTP")
+            .header("Accept-Encoding", "gzip,identity")
+            .header("Cookie", cookie.clone())
+            .body(())
+            .unwrap();
+
+        let ws_stream = match connect_async(ws_request).await {
+            Ok((stream, _response)) => {
+                println!("Handshake has been completed");
+                // println!("Server response was {:?}", response);
+                stream
+            }
+            Err(e) => {
+                println!("F1 handshake failed with {e}!");
+                return Err(e);
+            }
+        };
+
+        Ok(ws_stream)
+    }
 }

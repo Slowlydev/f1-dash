@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use futures::StreamExt;
 use tokio::net::TcpStream;
-use tokio_tungstenite::{accept_async, tungstenite::Error, WebSocketStream};
+use tokio_tungstenite::accept_async;
 
 use crate::f1_socket::F1Socket;
 
@@ -25,6 +25,6 @@ impl Socket {
 
         // Setting up F1 Connection
 
-        // let f1_ws_negotiate = F1Socket::negotiate().await;
+        let _f1_ws = F1Socket::start().await;
     }
 }
