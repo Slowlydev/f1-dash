@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use futures::StreamExt;
 use tokio::net::TcpStream;
-use tokio_tungstenite::accept_async;
+use tokio_tungstenite::{accept_async, tungstenite::Message};
 
 use crate::f1_socket::F1Socket;
 
@@ -25,6 +25,32 @@ impl Socket {
 
         // Setting up F1 Connection
 
-        let _f1_ws = F1Socket::start().await;
+        let Ok(f1_ws) = F1Socket::start().await else {
+            println!("F1 websocket failed to connect");
+            return;
+        };
+
+        let (mut f1_ws_tx, mut f1_ws_rx) = f1_ws.split();
+
+        F1Socket::subscribe(&mut f1_ws_tx).await;
+
+        // Listen for new F1 Messages
+
+        while let Some(raw_msg) = f1_ws_rx.next().await {
+            let Ok(msg) = raw_msg else {
+                println!("F1 Websocket error: {:?}", raw_msg);
+                return;
+            };
+
+            match msg {
+                Message::Text(text) => {
+                    println!("F1 Message: {:?}", text);
+                }
+                Message::Ping(_) => println!("F1 got Ping"),
+                Message::Pong(_) => println!("F1 got Pong"),
+                Message::Close(_) => println!("F1 got closed"),
+                _ => {}
+            }
+        }
     }
 }
