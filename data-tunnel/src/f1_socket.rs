@@ -1,3 +1,4 @@
+use futures::{stream::SplitSink, SinkExt};
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Client as ReqwestClient, Response, Result as ReqwestResult,
@@ -7,7 +8,7 @@ use serde_json::{json, Value};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{
     connect_async,
-    tungstenite::{handshake::client::Request, Error as TungsteniteError},
+    tungstenite::{client::IntoClientRequest, http::Request, Error as TungsteniteError, Message},
     MaybeTlsStream, WebSocketStream,
 };
 
@@ -27,6 +28,8 @@ pub struct NegotiateResult {
     TransportConnectTimeout: f32,
     LongPollDelay: f32,
 }
+
+type F1WsTx = SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>;
 
 pub struct F1Socket {}
 
@@ -84,8 +87,8 @@ impl F1Socket {
 
         let body: String = res.text().await?;
 
-        let json: NegotiateResult =
-            serde_json::from_str(&body).expect("Failed to convert negotiate response to JSON");
+        let json: NegotiateResult = serde_json::from_str(&body)
+            .expect("F1 websocket failed to convert negotiate response to JSON");
 
         Ok((cookie, json))
     }
@@ -95,18 +98,16 @@ impl F1Socket {
 
         let url: String = Self::create_url(&negotiate_result.ConnectionToken);
 
-        let ws_request = Request::builder()
-            .uri(url)
-            .header("User-Agent", "BestHTTP")
-            .header("Accept-Encoding", "gzip,identity")
-            .header("Cookie", cookie.clone())
-            .body(())
-            .unwrap();
+        let mut ws_request: Request<()> = url.into_client_request().unwrap();
+
+        let headers: &mut HeaderMap = ws_request.headers_mut();
+        headers.insert("User-Agent", "BestHTTP".parse().unwrap());
+        headers.insert("Accept-Encoding", "gzip,identity".parse().unwrap());
+        headers.insert("Cookie", cookie.clone());
 
         let ws_stream = match connect_async(ws_request).await {
             Ok((stream, _response)) => {
-                println!("Handshake has been completed");
-                // println!("Server response was {:?}", response);
+                println!("F1 handshake has been completed");
                 stream
             }
             Err(e) => {
@@ -116,5 +117,33 @@ impl F1Socket {
         };
 
         Ok(ws_stream)
+    }
+
+    pub async fn subscribe(f1_ws_tx: &mut F1WsTx) {
+        let request: Value = json!({
+            "H": "Streaming",
+            "M": "Subscribe",
+            "A": [[
+                "Heartbeat",
+                "CarData.z",
+                "Position.z",
+                "ExtrapolatedClock",
+                "TopThree",
+                "RcmSeries",
+                "TimingStats",
+                "TimingAppData",
+                "WeatherData",
+                "TrackStatus",
+                "DriverList",
+                "RaceControlMessages",
+                "SessionInfo",
+                "SessionData",
+                "LapCount",
+                "TimingData",
+            ]],
+            "I": 1,
+        });
+
+        let _ = f1_ws_tx.send(Message::Text(request.to_string())).await;
     }
 }
