@@ -54,18 +54,21 @@ export default function DataWeatherInfo({ weather }: Props) {
         <div className="flex items-center gap-1">
           <LazyData
             data={
-              weather?.wind_direction
+              weather?.wind_direction !== undefined
                 ? getWindDirection(weather.wind_direction)
                 : undefined
             }
           />
-          {weather?.wind_direction && (
+          {weather?.wind_direction !== undefined && (
             <div className="mt-1 h-8 w-8 overflow-hidden">
               <Image
                 src={arrowIcon}
                 alt="arrow"
                 className="h-8 w-8"
-                style={{ rotate: `${weather.wind_direction}deg` }}
+                style={{
+                  rotate: `${weather.wind_direction}deg`,
+                  transition: "1s linear",
+                }}
               />
             </div>
           )}

@@ -8,6 +8,7 @@ import {
 	F1SessionData,
 	F1SessionInfo,
 	F1State,
+	F1TeamRadio,
 	F1TimingAppData,
 	F1TimingData,
 	F1TimingStats,
@@ -26,6 +27,7 @@ import {
 	SessionInfo,
 	State,
 	Stint,
+	TeamRadio,
 	TrackStatus,
 	Weather,
 } from "./models";
@@ -64,6 +66,8 @@ export const translateSession = (e: F1SessionInfo): SessionInfo => {
 		offset: e.GmtOffset,
 
 		type: e.Type,
+		typeName: e.Name,
+		...(e.Number && { number: e.Number }),
 	};
 };
 
@@ -107,43 +111,78 @@ export const translateRaceControlMessages = (e: F1RaceControlMessages): RaceCont
 	}));
 };
 
-export const translatePositions = (e: F1Position, drivers: F1DriverList): DriverPositionBatch[] => {
+export const translateTeamRadios = (e: F1TeamRadio, drivers: F1DriverList, sessionInfo: F1SessionInfo): TeamRadio[] => {
+	return e.Captures.map((capture): TeamRadio | null => {
+		const driver = drivers[capture.RacingNumber] ?? null;
+
+		if (!driver) return null;
+
+		return {
+			driverNr: capture.RacingNumber,
+
+			broadcastName: driver.BroadcastName,
+			fullName: driver.FullName,
+			firstName: driver.FirstName,
+			lastName: driver.LastName,
+			short: driver.Tla,
+
+			teamColor: driver.TeamColour,
+
+			utc: capture.Utc,
+			audioUrl: `https://livetiming.formula1.com/static/${sessionInfo.Path}${capture.Path}`,
+		};
+	}).filter((v) => v !== null) as TeamRadio[];
+};
+
+export const translatePositions = (e: F1Position, drivers: F1DriverList, td: F1TimingData): DriverPositionBatch[] => {
 	return e.Position.map(
 		(e): DriverPositionBatch => ({
 			utc: e.Timestamp,
-			positions: Object.entries(e.Entries).map(([nr, e2]): DriverPosition => {
-				const driver = drivers[nr];
+			positions: Object.entries(e.Entries)
+				.map(([nr, e2]): DriverPosition | null => {
+					const driver = drivers[nr] ?? null;
+					const tdDriver = td.Lines[nr];
 
-				return {
-					driverNr: nr,
+					if (!driver) return null;
 
-					broadcastName: driver.BroadcastName,
-					fullName: driver.FullName,
-					firstName: driver.FirstName,
-					lastName: driver.LastName,
-					short: driver.Tla,
+					return {
+						driverNr: nr,
+						position: tdDriver.Position,
 
-					teamColor: driver.TeamColour,
+						broadcastName: driver.BroadcastName,
+						fullName: driver.FullName,
+						firstName: driver.FirstName,
+						lastName: driver.LastName,
+						short: driver.Tla,
 
-					status: e2.Status,
-					x: e2.X,
-					y: e2.Y,
-					z: e2.Z,
-				};
-			}),
+						teamColor: driver.TeamColour,
+
+						status: e2.Status,
+						x: e2.X,
+						y: e2.Y,
+						z: e2.Z,
+					};
+				})
+				.filter((v) => v !== null) as DriverPosition[],
 		})
 	);
 };
 
-export const translateDrivers = (dl: F1DriverList, td: F1TimingData, ts: F1TimingStats, cd: F1CarData, tad: F1TimingAppData): Driver[] => {
+export const translateDrivers = (
+	dl: F1DriverList,
+	td: F1TimingData,
+	ts: F1TimingStats,
+	cd: F1CarData | undefined,
+	tad: F1TimingAppData
+): Driver[] => {
 	return Object.entries(dl)
 		.map(([nr, driver]): Driver | null => {
 			const tdDriver = td.Lines[nr];
-			const car = cd.Entries[cd.Entries.length - 1]?.Cars[nr]?.Channels ?? null;
+			const car = cd ? cd.Entries[cd.Entries.length - 1]?.Cars[nr]?.Channels : null;
 			const timingStats = ts.Lines?.[nr] ?? null;
 			const appTiming = tad.Lines?.[nr] ?? null;
 
-			if (!tdDriver || !timingStats || !car || !appTiming) return null;
+			if (!tdDriver || !timingStats || !appTiming) return null;
 
 			return {
 				nr,
@@ -157,6 +196,7 @@ export const translateDrivers = (dl: F1DriverList, td: F1TimingData, ts: F1Timin
 
 				line: driver.Line,
 				position: tdDriver.Position,
+				positionChange: parseInt(appTiming.GridPos) - parseInt(tdDriver.Position),
 
 				teamName: driver.TeamName,
 				teamColor: driver.TeamColour,
@@ -186,9 +226,8 @@ export const translateDrivers = (dl: F1DriverList, td: F1TimingData, ts: F1Timin
 							fastest: e.OverallFastest,
 							pb: e.PersonalFastest,
 						},
-						// TODO find a smart way to keep the old state
 						last: {
-							value: e.Value,
+							value: e.PreviousValue ?? "",
 							fastest: false,
 							pb: false,
 						},
@@ -196,13 +235,15 @@ export const translateDrivers = (dl: F1DriverList, td: F1TimingData, ts: F1Timin
 					})
 				),
 
-				stints: appTiming.Stints.map(
-					(e): Stint => ({
-						compound: (e.Compound ?? "hard").toLowerCase() as Stint["compound"],
-						laps: e.TotalLaps ?? 0,
-						new: e.New === "True",
-					})
-				),
+				stints: appTiming.Stints
+					? appTiming.Stints.map(
+							(e): Stint => ({
+								compound: (e.Compound ?? "hard").toLowerCase() as Stint["compound"],
+								laps: e.TotalLaps ?? 0,
+								new: e.New === "True",
+							})
+					  )
+					: [],
 
 				lapTimes: {
 					best: {
@@ -218,14 +259,14 @@ export const translateDrivers = (dl: F1DriverList, td: F1TimingData, ts: F1Timin
 				},
 
 				drs: {
-					on: [10, 12, 14].includes(car[45] ?? 0),
+					on: [10, 12, 14].includes(car ? car[45] : 0),
 					possible: tdDriver.IntervalToPositionAhead ? parseFloat(tdDriver.IntervalToPositionAhead.Value.substring(1)) < 1 : false, // TODO check if valid
 				},
 
 				metrics: {
-					gear: car["3"],
-					rpm: car["0"],
-					speed: car["2"],
+					gear: car ? car["3"] : 0,
+					rpm: car ? car["0"] : 0,
+					speed: car ? car["2"] : 0,
 				},
 			};
 		})
@@ -241,14 +282,20 @@ export const translate = (state: F1State): State => {
 		...(state.WeatherData && { weather: translateWeather(state.WeatherData) }),
 		...(state.SessionInfo && { session: translateSession(state.SessionInfo) }),
 
-		...(state.Position && state.DriverList && { positionBatches: translatePositions(state.Position, state.DriverList) }),
 		...(state.RaceControlMessages && { raceControlMessages: translateRaceControlMessages(state.RaceControlMessages) }),
+
+		...(state.TeamRadio &&
+			state.DriverList &&
+			state.SessionInfo && { teamRadios: translateTeamRadios(state.TeamRadio, state.DriverList, state.SessionInfo) }),
+
+		...(state.Position &&
+			state.DriverList &&
+			state.TimingData && { positionBatches: translatePositions(state.Position, state.DriverList, state.TimingData) }),
 
 		// TODO make work without other cats
 		...(state.DriverList &&
 			state.TimingData &&
 			state.TimingStats &&
-			state.CarData &&
 			state.TimingAppData && {
 				drivers: translateDrivers(state.DriverList, state.TimingData, state.TimingStats, state.CarData, state.TimingAppData),
 			}),

@@ -13,16 +13,25 @@ import { SessionInfo } from "../types/session.type";
 import { LapCount } from "../types/lap-count.type";
 import { TrackStatus } from "../types/track-status.type";
 
-import settingsIcon from "../../public/icons/settings.svg";
+import helpIcon from "../../public/icons/help-circle.svg";
 
 type Props = {
   session: SessionInfo | undefined;
   clock: ExtrapolatedClock | undefined;
   track: TrackStatus | undefined;
   lapCount: LapCount | undefined;
+  connected: boolean;
+  className?: string;
 };
 
-export default function RaceInfo({ session, clock, track, lapCount }: Props) {
+export default function RaceInfo({
+  session,
+  clock,
+  track,
+  lapCount,
+  connected,
+  className,
+}: Props) {
   const timeRemaining =
     !!clock && !!clock.remaining
       ? clock.extrapolating
@@ -34,18 +43,18 @@ export default function RaceInfo({ session, clock, track, lapCount }: Props) {
         : clock.remaining
       : undefined;
 
-  const currentTrackStatus = getTrackStatusMessage(track?.status ?? null);
+  const currentTrackStatus = getTrackStatusMessage(track?.status);
 
   return (
-    <div className="flex flex-wrap justify-between gap-2">
-      <div className="flex flex-1 items-center justify-between gap-8">
+    <div className={clsx("flex flex-wrap justify-between gap-2", className)}>
+      <div className="flex flex-1 items-center justify-between gap-5">
         <div className="flex flex-auto items-center gap-3">
           <Flag countryCode={session?.countryCode} />
 
           <div className="flex flex-grow flex-col justify-center">
             {session ? (
               <h1 className="truncate text-sm font-medium text-gray-500">
-                {session.name}: {session.type ?? "unknown"}
+                {session.name}: {session.typeName ?? "unknown"}
               </h1>
             ) : (
               <div className="h-4 w-2/3 animate-pulse rounded-md bg-gray-700" />
@@ -59,22 +68,33 @@ export default function RaceInfo({ session, clock, track, lapCount }: Props) {
           </div>
         </div>
 
-        <Link href="/settings" className="block cursor-pointer sm:hidden">
-          <Image
-            src={settingsIcon}
-            alt="settings"
-            className="mr-1 opacity-40"
-          />
+        <div
+          className={clsx(
+            "h-4 w-4 rounded-full sm:hidden",
+            connected ? "bg-emerald-500" : "bg-red-500"
+          )}
+        />
+
+        <Link href="/help" className="block cursor-pointer sm:hidden">
+          <Image src={helpIcon} alt="help" className="mr-1 opacity-40" />
         </Link>
       </div>
 
-      <div className="flex w-full flex-row-reverse items-center justify-between gap-4 sm:w-auto sm:flex-row">
-        <Link href="/settings" className="hidden cursor-pointer sm:block">
-          <Image
-            src={settingsIcon}
-            alt="settings"
-            className="mr-1 opacity-40"
-          />
+      <div
+        className={clsx(
+          "flex w-full flex-row-reverse items-center justify-between gap-4 sm:w-auto sm:flex-row",
+          { "!flex-row": !!!lapCount }
+        )}
+      >
+        <div
+          className={clsx(
+            "hidden h-4 w-4 rounded-full sm:block",
+            connected ? "bg-emerald-500" : "bg-red-500"
+          )}
+        />
+
+        <Link href="/help" className="hidden cursor-pointer sm:block">
+          <Image src={helpIcon} alt="help" className="mr-1 opacity-40" />
         </Link>
 
         {!!lapCount && (
@@ -83,28 +103,36 @@ export default function RaceInfo({ session, clock, track, lapCount }: Props) {
           </p>
         )}
 
-        <div
-          className={clsx(
-            "flex h-8 items-center truncate rounded-md px-2",
-            currentTrackStatus.color
-          )}
-        >
-          <p className="text-xl font-semibold">{currentTrackStatus.message}</p>
-        </div>
-
-        <div
-          className={clsx(
-            currentTrackStatus.color,
-            "absolute right-0 top-0 z-[-10] h-[2rem] w-2/5 sm:w-[15rem]",
-            "invisible sm:visible"
-          )}
-        >
+        {!!currentTrackStatus ? (
           <div
             className={clsx(
-              "absolute right-0 top-0 z-[-10] h-[8rem] w-[25rem] backdrop-blur-[40px]"
+              "flex h-8 items-center truncate rounded-md px-2",
+              currentTrackStatus.color
             )}
-          />
-        </div>
+          >
+            <p className="text-xl font-semibold">
+              {currentTrackStatus.message}
+            </p>
+          </div>
+        ) : (
+          <div className="relative h-8 w-28 animate-pulse overflow-hidden rounded-lg bg-gray-700" />
+        )}
+
+        {!!currentTrackStatus && (
+          <div
+            className={clsx(
+              currentTrackStatus.color,
+              "absolute right-0 top-0 z-[-10] h-[2rem] w-2/5 sm:w-[15rem]",
+              "invisible sm:visible"
+            )}
+          >
+            <div
+              className={clsx(
+                "absolute right-0 top-0 z-[-10] h-[8rem] w-[25rem] backdrop-blur-[40px]"
+              )}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -119,13 +147,7 @@ const Flag = ({ countryCode }: FlagProps) => {
     <div className="flex h-12 w-16  content-center justify-center">
       {countryCode ? (
         <Image
-          src={`/country-flags/${
-            countryCode.length > 2
-              ? countryCode
-                  .toLowerCase()
-                  .substring(0, countryCode.toLowerCase().length - 1)
-              : countryCode
-          }.svg`}
+          src={`/country-flags/${countryCode.toLowerCase()}.svg`}
           alt={countryCode}
           width={70}
           height={35}

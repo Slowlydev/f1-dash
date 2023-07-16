@@ -6,6 +6,7 @@ export type State = {
 	weather?: Weather;
 
 	raceControlMessages?: RaceControlMessage[];
+	teamRadios?: TeamRadio[];
 	drivers?: Driver[];
 
 	session?: SessionInfo;
@@ -62,6 +63,8 @@ export type SessionInfo = {
 	offset: string;
 
 	type: string;
+	typeName: string;
+	number?: number;
 };
 
 export type Weather = {
@@ -94,6 +97,7 @@ export type Driver = {
 
 	line: number;
 	position: string;
+	positionChange: number;
 
 	teamName: string;
 	teamColor: string;
@@ -155,6 +159,7 @@ export type DriverPositionBatch = {
 
 export type DriverPosition = {
 	driverNr: string;
+	position: string;
 
 	broadcastName: string;
 	fullName: string;
@@ -169,4 +174,19 @@ export type DriverPosition = {
 	x: number;
 	y: number;
 	z: number;
+};
+
+export type TeamRadio = {
+	driverNr: string;
+
+	broadcastName: string;
+	fullName: string;
+	firstName: string;
+	lastName: string;
+	short: string;
+
+	teamColor: string;
+
+	utc: string;
+	audioUrl: string;
 };

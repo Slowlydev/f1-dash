@@ -37,6 +37,7 @@ export type F1Recap = {
 	SessionData?: F1SessionData;
 	LapCount?: F1LapCount;
 	TimingData?: F1TimingData;
+	TeamRadio?: F1TeamRadio;
 
 	"CarData.z"?: string;
 	"Position.z"?: string;
@@ -149,6 +150,7 @@ export type F1SessionInfo = {
 	EndDate: string;
 	GmtOffset: string;
 	Path: string;
+	Number?: number;
 	_kf: boolean;
 };
 
@@ -232,6 +234,7 @@ export type F1TimingDataDriver = {
 export type F1Sector = {
 	Stopped: boolean;
 	Value: string;
+	PreviousValue?: string;
 	Status: number;
 	OverallFastest: boolean;
 	PersonalFastest: boolean;
@@ -336,4 +339,15 @@ export type F1CarDataChannels = {
 	"4": number;
 	"5": number;
 	"45": number;
+};
+
+export type F1TeamRadio = {
+	Captures: F1RadioCapture[];
+	_kf: boolean;
+};
+
+export type F1RadioCapture = {
+	Utc: string;
+	RacingNumber: string;
+	Path: string;
 };
