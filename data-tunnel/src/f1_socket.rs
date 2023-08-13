@@ -12,6 +12,8 @@ use tokio_tungstenite::{
     MaybeTlsStream, WebSocketStream,
 };
 
+pub mod f1_models;
+
 const F1_BASE_URL: &str = "livetiming.formula1.com/signalr";
 
 #[allow(non_snake_case)]
@@ -62,6 +64,7 @@ impl F1Socket {
     fn create_url(token: &str) -> String {
         if let Some(env_url) = std::env::var_os("WS_URL") {
             if let Ok(env_url) = env_url.into_string() {
+                println!("Using env for F1 URL {env_url}");
                 return env_url;
             };
         };
@@ -107,7 +110,7 @@ impl F1Socket {
 
         let ws_stream = match connect_async(ws_request).await {
             Ok((stream, _response)) => {
-                println!("F1 handshake has been completed");
+                println!("F1 handshake has been completed!");
                 stream
             }
             Err(e) => {
@@ -145,5 +148,9 @@ impl F1Socket {
         });
 
         let _ = f1_ws_tx.send(Message::Text(request.to_string())).await;
+    }
+
+    pub fn fix_json(json: &str) -> String {
+        json.replace(",\"_kf\":true", "")
     }
 }
