@@ -14,4 +14,5 @@ futures = "0.3.28"
 reqwest = "0.11.18"
 base64 = "0.21.2"
 zune-inflate = "0.2.54"
+merge = "0.1.0"
 # sea-orm = { version = "^0", features = [ "sqlx-postgres", "runtime-tokio-native-tls", "macros", "with-json", "with-uuid", "with-time" ] }

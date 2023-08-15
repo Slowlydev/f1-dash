@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use merge::Merge;
+
 pub mod f1_driver_list;
 pub mod f1_extrapolated_clock;
 pub mod f1_heartbeat;
@@ -67,7 +69,7 @@ pub enum A {
     PositionZ(String),
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, Merge)]
 #[serde(rename_all = "camelCase")]
 pub struct R {
     #[serde(rename = "Heartbeat")]
@@ -112,9 +114,11 @@ pub struct R {
     #[serde(rename = "TeamRadio")]
     pub team_radio: Option<f1_team_radio::TeamRadio>,
 
+    #[merge(skip)]
     #[serde(rename = "CarData.z")]
     pub car_data_z: String,
 
+    #[merge(skip)]
     #[serde(rename = "Position.z")]
     pub position_z: String,
 }

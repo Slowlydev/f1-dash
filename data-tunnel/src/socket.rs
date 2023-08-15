@@ -1,10 +1,12 @@
 use std::net::SocketAddr;
 
-use futures::StreamExt;
+use futures::{SinkExt, StreamExt};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 
+use crate::f1_socket::f1_models::{SocketData};
 use crate::f1_socket::F1Socket;
+use crate::state::State;
 
 pub struct Socket {}
 
@@ -19,7 +21,7 @@ impl Socket {
 			return;
 		};
 
-        let (mut _ws_tx, _) = ws.split();
+        let (mut ws_tx, _) = ws.split();
 
         println!("Connected to {socket_address:?}!");
 
@@ -36,6 +38,8 @@ impl Socket {
 
         // Listen for new F1 Messages
 
+        let mut state = State::new();
+
         while let Some(raw_msg) = f1_ws_rx.next().await {
             let Ok(msg) = raw_msg else {
                 println!("F1 Websocket error: {:?}", raw_msg);
@@ -44,7 +48,18 @@ impl Socket {
 
             match msg {
                 Message::Text(text) => {
-                    println!("F1 Message: {:?}", text);
+                    // println!("F1 Message: {:?}", text);
+
+                    let data: SocketData =
+                        serde_json::from_str::<SocketData>(&F1Socket::fix_json(&text)).unwrap();
+
+                    state.update(data);
+
+                    let tmp = state.value.clone();
+
+                    let _ = ws_tx.send(Message::Text(serde_json::to_string(&tmp).unwrap())).await;
+
+                    println!("State {tmp:?}");
                 }
                 Message::Ping(_) => println!("F1 got Ping"),
                 Message::Pong(_) => println!("F1 got Pong"),
