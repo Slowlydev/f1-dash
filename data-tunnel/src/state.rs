@@ -1,6 +1,9 @@
-use merge::Merge;
+use std::collections::HashMap;
 
-use crate::f1_socket::f1_models::{SocketData, R};
+use merge::Merge;
+use serde_json::Value;
+
+use crate::f1_socket::f1_models::{SocketData, A, R};
 
 pub struct State {
     pub value: R,
@@ -23,11 +26,14 @@ impl State {
                 };
 
                 // get category and message
-                let category: &String = &message.a.0;
-                let message: &serde_json::Value = &message.a.1;
+                let category: String = message.a.0;
+                let message: A = serde_json::from_value::<A>(message.a.1).unwrap(); // TODO remove
 
-                println!("category: {category:?}");
-                println!("message: {message:?}");
+                println!("{addition:?}");
+
+                // let data_additon: R = serde_json::
+
+                // self.value.merge(data_additon);
             }
         }
 

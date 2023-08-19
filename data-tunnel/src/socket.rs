@@ -4,7 +4,7 @@ use futures::{SinkExt, StreamExt};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 
-use crate::f1_socket::f1_models::{SocketData};
+use crate::f1_socket::f1_models::SocketData;
 use crate::f1_socket::F1Socket;
 use crate::state::State;
 
@@ -57,7 +57,9 @@ impl Socket {
 
                     let tmp = state.value.clone();
 
-                    let _ = ws_tx.send(Message::Text(serde_json::to_string(&tmp).unwrap())).await;
+                    let _ = ws_tx
+                        .send(Message::Text(serde_json::to_string(&tmp).unwrap()))
+                        .await;
 
                     println!("State {tmp:?}");
                 }

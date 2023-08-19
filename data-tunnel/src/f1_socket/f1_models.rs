@@ -116,9 +116,11 @@ pub struct R {
 
     #[merge(skip)]
     #[serde(rename = "CarData.z")]
-    pub car_data_z: String,
+    pub car_data_z: Option<String>,
 
     #[merge(skip)]
     #[serde(rename = "Position.z")]
-    pub position_z: String,
+    pub position_z: Option<String>,
 }
+
+pub type RR = HashMap<String, A>;

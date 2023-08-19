@@ -9,7 +9,7 @@ pub struct TimingData {
     pub lines: HashMap<String, TimingDataDriver>,
 
     #[serde(rename = "Withheld")]
-    pub withheld: bool,
+    pub withheld: Option<bool>,
     // #[serde(rename = "_kf")]
     // pub kf: bool,
 }
@@ -19,49 +19,49 @@ pub struct TimingData {
 #[serde(rename_all = "camelCase")]
 pub struct TimingDataDriver {
     #[serde(rename = "BestLapTime")]
-    pub best_lap_time: BestLapTime,
+    pub best_lap_time: Option<BestLapTime>, // TODO check
 
     #[serde(rename = "GapToLeader")]
     pub gap_to_leader: String,
 
     #[serde(rename = "InPit")]
-    pub in_pit: bool,
+    pub in_pit: Option<bool>, // TODO check
 
     #[serde(rename = "IntervalToPositionAhead")]
     pub interval_to_position_ahead: IntervalToPositionAhead,
 
     #[serde(rename = "LastLapTime")]
-    pub last_lap_time: LastLapTime,
+    pub last_lap_time: Option<LastLapTime>, // TODO check
 
     #[serde(rename = "Line")]
-    pub line: i64,
+    pub line: Option<i64>,
 
     #[serde(rename = "PitOut")]
-    pub pit_out: bool,
+    pub pit_out: Option<bool>,
 
     #[serde(rename = "Position")]
-    pub position: String,
+    pub position: Option<String>,
 
     #[serde(rename = "RacingNumber")]
-    pub racing_number: String,
+    pub racing_number: Option<String>,
 
     #[serde(rename = "Retired")]
-    pub retired: bool,
+    pub retired: Option<bool>,
 
     #[serde(rename = "Sectors")]
-    pub sectors: Vec<Sector>,
+    pub sectors: Option<Vec<Sector>>,
 
     #[serde(rename = "ShowPosition")]
-    pub show_position: bool,
+    pub show_position: Option<bool>,
 
     #[serde(rename = "Speeds")]
-    pub speeds: Speeds,
+    pub speeds: Option<Speeds>,
 
     #[serde(rename = "Status")]
-    pub status: i64,
+    pub status: Option<i64>,
 
     #[serde(rename = "Stopped")]
-    pub stopped: bool,
+    pub stopped: Option<bool>,
 
     // race specific?
     #[serde(rename = "NumberOfLaps")]
@@ -108,7 +108,7 @@ pub struct BestLapTime {
 #[serde(rename_all = "camelCase")]
 pub struct IntervalToPositionAhead {
     #[serde(rename = "Catching")]
-    pub catching: bool,
+    pub catching: Option<bool>, //  TODO check
 
     #[serde(rename = "Value")]
     pub value: String,
