@@ -7,13 +7,13 @@ import type { Archive } from "@/types/archive.type";
 import type { NextMeeting } from "@/types/nextMeeting.type";
 
 const getArchive = async (): Promise<Archive> => {
-	const req = await fetch(`${env.NEXT_PUBLIC_SERVER_URL}/api/archive`);
+	const req = await fetch(`${env.NEXT_PUBLIC_SERVER_URL}/api/archive`, { next: { revalidate: 30 } });
 	const res: Archive = await req.json();
 	return res;
 };
 
 const getNextMeeting = async (): Promise<NextMeeting> => {
-	const req = await fetch(`${env.NEXT_PUBLIC_SERVER_URL}/api/next-meeting`);
+	const req = await fetch(`${env.NEXT_PUBLIC_SERVER_URL}/api/next-meeting`, { next: { revalidate: 30 } });
 	const res: NextMeeting = await req.json();
 	return res;
 };
@@ -28,6 +28,10 @@ export default async function ArchivePage() {
 
 			<div>
 				<h2 className="text-2xl font-semibold">Archive</h2>
+
+				<div className="mt-2 w-fit rounded-lg bg-yellow-900 p-2">
+					<p>The replay functionality is not implemented. This Page is currenly just for viewing the podium.</p>
+				</div>
 
 				{/* TODO: implement sorting and year change some time */}
 
