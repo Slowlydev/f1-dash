@@ -1,3 +1,4 @@
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -14,7 +15,7 @@ use tokio_tungstenite::{
     tungstenite::{self, client::IntoClientRequest, http::Request},
     MaybeTlsStream, WebSocketStream,
 };
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 const F1_BASE_URL: &str = "livetiming.formula1.com/signalr";
 
@@ -98,6 +99,30 @@ impl Client {
         client.subscribe().await;
 
         Ok(client)
+    }
+
+    pub async fn handle_messages(self) {
+        let (_, mut client_rx) = self.socket.split();
+
+        while let Some(message) = client_rx.next().await {
+            let message = message.unwrap();
+
+            match message {
+                tungstenite::Message::Close(_) => {
+                    error!("Got close from f1");
+                    return;
+                }
+                tungstenite::Message::Text(text) => {
+                    let client_message = serde_json::from_str::<Message>(&text).unwrap();
+
+                    debug!(
+                        "got message from f1 {:?}",
+                        replay_or_message(client_message)
+                    );
+                }
+                _ => (),
+            }
+        }
     }
 
     async fn negotiate() -> Result<(HeaderValue, NegotiateResult), ClientError> {

@@ -1,9 +1,3 @@
-use std::collections::HashMap;
-
-use futures::StreamExt;
-use serde_json::Value;
-use tokio::sync::watch;
-use tokio_tungstenite::tungstenite;
 use tracing::{error, info, warn};
 use tracing_subscriber;
 
@@ -32,27 +26,7 @@ async fn main() {
             return;
         };
 
-        let (_, mut client_rx) = client.socket.split();
-
-        while let Some(message) = client_rx.next().await {
-            let message = message.unwrap();
-
-            match message {
-                tungstenite::Message::Close(_) => {
-                    error!("Got close from f1");
-                    return;
-                }
-                tungstenite::Message::Text(text) => {
-                    let client_message = serde_json::from_str::<client::Message>(&text).unwrap();
-
-                    info!(
-                        "got message from f1 {:?}",
-                        client::replay_or_message(client_message)
-                    );
-                }
-                _ => (),
-            }
-        }
+        client.handle_messages().await;
     });
 
     let server_task = tokio::spawn(async {
