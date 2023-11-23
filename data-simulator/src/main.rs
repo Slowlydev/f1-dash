@@ -28,9 +28,9 @@ fn random_duration() -> Duration {
         Duration::from_millis(10),
         Duration::from_millis(50),
         Duration::from_millis(30),
-        Duration::from_millis(167),
-        Duration::from_millis(200),
-        Duration::from_millis(277),
+        // Duration::from_millis(167),
+        // Duration::from_millis(200),
+        // Duration::from_millis(277),
     ];
 
     let mut rng = rand::thread_rng();
@@ -89,5 +89,5 @@ async fn main() -> Result<(), IoError> {
         tokio::spawn(handle_connection(state.clone(), stream, addr));
     }
 
-    Ok(())  
+    Ok(())
 }
