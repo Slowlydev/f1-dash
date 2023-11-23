@@ -1,14 +1,11 @@
-use futures::StreamExt;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-
+use futures::{SinkExt, StreamExt};
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Client as ReqwestClient, Response,
 };
-
-use futures::SinkExt;
-
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use std::collections::HashMap;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{
     connect_async,
@@ -17,11 +14,11 @@ use tokio_tungstenite::{
 };
 use tracing::{debug, error, info};
 
+pub mod models;
+
 const F1_BASE_URL: &str = "livetiming.formula1.com/signalr";
 
-use std::collections::HashMap;
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Message {
     #[serde(rename = "C")]
@@ -34,7 +31,7 @@ pub struct Message {
     pub r: Option<HashMap<String, Value>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct M {
     #[serde(rename = "H")]
@@ -224,10 +221,6 @@ impl Client {
             .socket
             .send(tungstenite::Message::Text(request.to_string()))
             .await;
-    }
-
-    pub fn fix_json(json: &str) -> String {
-        json.replace(",\"_kf\":true", "")
     }
 }
 
