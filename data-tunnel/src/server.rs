@@ -1,4 +1,5 @@
 use tokio::net::TcpListener;
+use tracing::info;
 
 pub enum ServerError {
     Listener,
@@ -17,5 +18,14 @@ impl Server {
 
         let server = Server { tcp_listener };
         Ok(server)
+    }
+
+    pub async fn handle_connections(self) {
+        while let Ok((_stream, addr)) = self.tcp_listener.accept().await {
+            tokio::spawn(async move {
+                // Code to send socket updates
+                info!("got connection from {addr:?}");
+            });
+        }
     }
 }

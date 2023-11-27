@@ -39,12 +39,7 @@ async fn main() {
             return;
         };
 
-        while let Ok((stream, addr)) = server.tcp_listener.accept().await {
-            tokio::spawn(async {
-                // Code to send socket updates
-                // info!("got connection from {addr:?}");
-            });
-        }
+        server.handle_connections().await;
     });
 
     // Wait for both tasks to finish
