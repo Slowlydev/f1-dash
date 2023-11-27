@@ -1,6 +1,8 @@
 use tokio::net::TcpListener;
 use tracing::info;
 
+pub mod models;
+
 pub enum ServerError {
     Listener,
 }
