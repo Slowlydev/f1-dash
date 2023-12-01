@@ -1,3 +1,10 @@
+// ! genral !
+
+pub struct BatchItem<T> {
+    data: T,
+    timestamp: i32,
+}
+
 // ! weather !
 
 pub struct Weather {
@@ -149,9 +156,25 @@ pub enum DriverStatus {
     Out,
 }
 
-pub struct BatchItem<T> {
-    data: T,
-    timestamp: i32,
+// ! map !
+
+pub struct TrackMap {
+    track: Vec<Point>,
+    track_sectors: Vec<TrackSector>,
 }
 
-// ! map !
+pub struct Point {
+    x: i128,
+    y: i128,
+}
+
+pub enum TrackSectorStatus {
+    Clear,
+    Yellow,
+    Red,
+}
+
+pub struct TrackSector {
+    points: Vec<Point>,
+    status: TrackSectorStatus,
+}
