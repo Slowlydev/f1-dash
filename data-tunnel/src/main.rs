@@ -3,6 +3,7 @@ use tracing_subscriber;
 
 pub mod client;
 pub mod data;
+pub mod log;
 pub mod server;
 
 use client::Client;
@@ -11,10 +12,8 @@ use server::Server;
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
-        .with_max_level(get_log_level())
+        .with_max_level(log::get_level())
         .init();
-
-    // let (tx, mut rx) = watch::channel("");
 
     let client_task = tokio::spawn(async {
         // Code to connect to WebSockets
@@ -56,28 +55,4 @@ async fn main() {
     };
 
     info!("server and client ended without errors");
-}
-
-fn get_log_level() -> tracing::Level {
-    let level = std::env::var("LOG_LEVEL");
-
-    return match level {
-        Ok(level_string) => {
-            match level_string.as_str() {
-                "error" => tracing::Level::ERROR,
-                "warn" => tracing::Level::WARN,
-                "info" => tracing::Level::INFO,
-                "debug" => tracing::Level::DEBUG,
-                "trace" => tracing::Level::TRACE,
-                _ => {
-                    warn!("detected LOG_LEVEL env but no valid level has been set, using default: info");
-                    tracing::Level::INFO
-                }
-            }
-        }
-        Err(_) => {
-            info!("no log level set using default: info");
-            tracing::Level::INFO
-        }
-    };
 }
