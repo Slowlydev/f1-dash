@@ -30,7 +30,7 @@ const possibleDRS = (drs: number) => drs === 8;
 const inDangerZone = (position: number, sessionPart: number) => {
 	switch (sessionPart) {
 		case 1:
-			return position > 15;
+			return position > 16;
 		case 2:
 			return position > 10;
 		case 3:
